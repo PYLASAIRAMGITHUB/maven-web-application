@@ -1,0 +1,53 @@
+pipeline{
+
+agent any
+
+tools{
+maven "maven 3.8.1"
+}
+
+stages{
+
+stage('checkout code'){
+steps{
+git branch: 'development', credentialsId: '10d44637-0c7d-4d96-9f24-d1513c854dfc', url: 'https://github.com/PYLASAIRAMGITHUB/maven-web-application.git'
+}
+}
+
+stage('build'){
+steps{
+sh "mvn clean package"
+}
+}
+
+stage('Execute sonarqube report'){
+steps{
+sh "mvn clean sonar:sonar"
+}
+}
+
+stage('uploading artifact in nexus'){
+steps{
+sh "mvn clean deploy"
+}
+}
+
+stage('Deploy in tomcat server'){
+steps{
+    sshagent(['65476319-1387-4220-9c7d-4c2c626f8597']) {
+    sh"scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.232.206.44:/opt/apache-tomcat-9.0.46/webapps/"
+    }
+	}
+	}
+	
+	
+}
+post{
+success{
+emailext body: 'build is successful', subject: 'Build over', to: 'pylasairam372@gmail.com'
+}
+failure{
+emailext body: 'build is failure', subject: 'Build over', to: 'pylasairam372@gmail.com'
+}
+}
+}
